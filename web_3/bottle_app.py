@@ -121,12 +121,30 @@ def get_new_item():
 @post('/new_item')
 def post_new_item():
     new_item = request.forms.get("new_item").strip()
+    priority = request.forms.get("priority").strip()
+    date = request.forms.get("date").strip()
+    connection = sqlite3.connect("todo.db")
+    cursor = connection.cursor()
+    cursor.execute("insert into todo (task,priority,status,date) values (?,?,?,?)", (new_item,priority, 1,date))
+    connection.commit()
+    cursor.close()
+    redirect('/')
+    
+@post('/new_folder')
+def post_new_folder():
+    new_item = request.forms.get("new_folder").strip()
     connection = sqlite3.connect("todo.db")
     cursor = connection.cursor()
     cursor.execute("insert into todo (task, status) values (?,?)", (new_item, 1))
     connection.commit()
     cursor.close()
     redirect('/')
+
+    
+@get('/new_folder')
+def get_new_folder():
+    return template("new_folder")
+
 
 
 @get('/update_item/<id:int>')
@@ -143,9 +161,11 @@ def get_update_item(id):
 def post_update_item():
     id = int(request.forms.get("id").strip())
     updated_item = request.forms.get("updated_item").strip()
+    priority = request.forms.get("priority").strip()
+    date = request.forms.get("date").strip()
     connection = sqlite3.connect("todo.db")
     cursor = connection.cursor()
-    cursor.execute("update todo set task=? where id=?", (updated_item, id,))
+    cursor.execute("update todo set task=?, priority=?, date=? where id=?", (updated_item,priority,date, id,))
     connection.commit()
     cursor.close()
     redirect('/')
@@ -180,6 +200,31 @@ def get_visit():
         db.update({'visit_count':visit_count},query.session_id == session_id)
     response.set_cookie("session_id",session_id)
     return(f"Welcome, session_id #{session_id}. Visit# {visit_count}.")
+
+@get("/filter_priority")
+def filter_priority():
+    connection = sqlite3.connect("todo.db")
+    cursor = connection.cursor()
+    cursor.execute("select * from todo ORDER BY priority")
+    result = cursor.fetchall()
+    cursor.close()
+    return template("show_list", rows=result, session={})
+    
+
+    
+@get("/filter_date")
+def filter_date():
+    connection = sqlite3.connect("todo.db")
+    cursor = connection.cursor()
+    cursor.execute("select * from todo ORDER BY date")
+    result = cursor.fetchall()
+    cursor.close()
+    return template("show_list", rows=result, session={})
+
+
+    
+
+
 
 if ON_PYTHONANYWHERE:
     application = default_app()
